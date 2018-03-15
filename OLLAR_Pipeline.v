@@ -24,8 +24,9 @@ module OLLAR_Ops();
 	//Define Outputs
 	
 	//Define Registers
+	reg			[5:0]		Use	[2:0]				;	//Tracks register use [5]=Valid [4:0]=Register
 	
-	//Define Operations
+	//Define Operation Codes
 	parameter	[08:00]	NOP	=8'b00000000	;	//Do nothing
 	parameter	[08:00]	JMP	=8'b00000001	;	//Jump to address
 	parameter	[08:00]	LD		=8'b00000010	;	//Load value into register
@@ -50,5 +51,364 @@ module OLLAR_Ops();
 	parameter	[08:00]	RTL	=8'b10001101	;	//Rotate left
 	parameter	[08:00]	RTRC	=8'b10001110	;	//Rotate right through carry
 	parameter	[08:00]	RTLC	=8'b10001111	;	//Rotate left through carry
+	
+	//Pipeline
+	always@posedge clock
+	
+	//Reset
+	if(Reset == 1)
+		begin
+		
+		end
+	
+	//Machine State 3 - Store Data
+	if(Stall[3] == 0)
+		begin
+		
+		end
+	
+	//Machine State 2 - Perform Operation
+	if(Stall[2] == 0)
+		begin
+		
+		end
+	
+	//Machine State 1 - Fetch Operands
+	if(Stall[1] == 0)
+		begin
+		//Check if a register is in use by Machine State 2
+		//If so, any new value has yet to be written back
+		//Therefore, the new value must be taken from the pipeline
+		//RegLoc0
+		if			((Use[0][4:0] == RegLoc0[0]) && (Use[0][5] == 1))
+			begin
+			Operand[0] = OpOut[0];
+			end
+		else if	((Use[1][4:0] == RegLoc0[0]) && (Use[1][5] == 1))
+			begin
+			Operand[0] = OpOut[1];
+			end
+		else if	((Use[2][4:0] == RegLoc0[0]) && (Use[2][5] == 1))
+			begin
+			Operand[0] = OpOut[2];
+			end
+		else
+			begin
+			Operand[0] = R[RegLoc0[0]];
+			end
+		//RegLoc1
+		if			((Use[0][4:0] == RegLoc1[0]) && (Use[0][5] == 1))
+			begin
+			Operand[1] = OpOut[0];
+			end
+		else if	((Use[1][4:0] == RegLoc1[0]) && (Use[1][5] == 1))
+			begin
+			Operand[1] = OpOut[1];
+			end
+		else if	((Use[2][4:0] == RegLoc1[0]) && (Use[2][5] == 1))
+			begin
+			Operand[1] = OpOut[2];
+			end
+		else
+			begin
+			Operand[1] = R[RegLoc1[0]];
+			end
+		//RegLoc2
+		if			((Use[0][4:0] == RegLoc2[0]) && (Use[0][5] == 1))
+			begin
+			Operand[2] = OpOut[0];
+			end
+		else if	((Use[1][4:0] == RegLoc2[0]) && (Use[1][5] == 1))
+			begin
+			Operand[2] = OpOut[1];
+			end
+		else if	((Use[2][4:0] == RegLoc2[0]) && (Use[2][5] == 1))
+			begin
+			Operand[2] = OpOut[2];
+			end
+		else
+			begin
+			Operand[2] = R[RegLoc2[0]];
+			end
+		//All use flags are cleared
+		Use[0][5] = 0;
+		Use[1][5] = 0;
+		Use[2][5] = 0;
+		//Operations take in the values they need
+		//Any registers to be modified must be marked
+		case(Operation)
+		NOP:		//Unused values need not be stated
+			begin
+			//No Operands
+			//Nothing Used
+			end
+		JMP:
+			begin
+			OpIn[0] = Operand[0];
+			OpIn[1] = Operand[1];
+			OpIn[3] = Input;
+			Stall[0] = 1;
+			Stall[1] = 1;
+			PC = PC + 1;
+			Address = PC;
+			end
+		LD:
+			begin
+			OpIn[0] = Input;
+			OpIn[1] = 0;
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			Stall[0] = 1;
+			Stall[1] = 1;
+			PC = PC + 1;
+			if(Option[0] == 1)
+				begin
+				OpIn[1] = Operand[1];
+				end
+			Address = OpIn[0] + OpIn[1];
+			end
+		ST:
+			begin
+			OpIn[0] = Operand[0];
+			OpIn[1] = 0;
+			Stall[0] = 1;
+			Stall[1] = 1;
+			PC = PC + 1;
+			if(Option[0] == 1)
+				begin
+				OpIn[1] = Operand[1];
+				end
+			Address = OpIn[0] + OpIn[1];
+			end
+		SET:
+			begin
+			OpIn[0] = Input;
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			Stall[0] = 1;
+			Stall[1] = 1;
+			PC = PC + 1;
+			Address = PC;
+			end
+		CLR:
+			begin
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			end
+		ADD:
+			begin
+			OpIn[0] = Operand[0];
+			OpIn[1] = Operand[1];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			if(Option[0] == 1)
+				begin
+				OpIn[2] = Input;
+				Stall[0] = 1;
+				Stall[1] = 1;
+				PC = PC + 1;
+				Address = PC;
+				end
+			end
+		SUB:
+			begin
+			OpIn[0] = Operand[0];
+			OpIn[1] = Operand[1];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			if(Option[0] == 1)
+				begin
+				OpIn[2] = Input;
+				Stall[0] = 1;
+				Stall[1] = 1;
+				PC = PC + 1;
+				Address = PC;
+				end
+			end
+		MUL:
+			begin
+			OpIn[0] = Operand[0];
+			OpIn[1] = Operand[1];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			if(Option[0] == 1)
+				begin
+				OpIn[2] = Input;
+				Stall[0] = 1;
+				Stall[1] = 1;
+				PC = PC + 1;
+				Address = PC;
+				end
+			end
+		DIV:
+			begin
+			OpIn[0] = Operand[0];
+			OpIn[1] = Operand[1];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			if(Option[0] == 1)
+				begin
+				OpIn[2] = Input;
+				Stall[0] = 1;
+				Stall[1] = 1;
+				PC = PC + 1;
+				Address = PC;
+				end
+			end
+		AND:
+			begin
+			OpIn[0] = Operand[0];
+			OpIn[1] = Operand[1];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			if(Option[0] == 1)
+				begin
+				OpIn[2] = Input;
+				Stall[0] = 1;
+				Stall[1] = 1;
+				PC = PC + 1;
+				Address = PC;
+				end
+			end
+		NAND:
+			begin
+			OpIn[0] = Operand[0];
+			OpIn[1] = Operand[1];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			if(Option[0] == 1)
+				begin
+				OpIn[2] = Input;
+				Stall[0] = 1;
+				Stall[1] = 1;
+				PC = PC + 1;
+				Address = PC;
+				end
+			end
+		OR:
+			begin
+			OpIn[0] = Operand[0];
+			OpIn[1] = Operand[1];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			if(Option[0] == 1)
+				begin
+				OpIn[2] = Input;
+				Stall[0] = 1;
+				Stall[1] = 1;
+				PC = PC + 1;
+				Address = PC;
+				end
+			end
+		NOR:
+			begin
+			OpIn[0] = Operand[0];
+			OpIn[1] = Operand[1];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			if(Option[0] == 1)
+				begin
+				OpIn[2] = Input;
+				Stall[0] = 1;
+				Stall[1] = 1;
+				PC = PC + 1;
+				Address = PC;
+				end
+			end
+		XOR:
+			begin
+			OpIn[0] = Operand[0];
+			OpIn[1] = Operand[1];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			if(Option[0] == 1)
+				begin
+				OpIn[2] = Input;
+				Stall[0] = 1;
+				Stall[1] = 1;
+				PC = PC + 1;
+				Address = PC;
+				end
+			end
+		NOT:
+			begin
+			OpIn[0] = Operand[2];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			end
+		SHR:
+			begin
+			OpIn[0] = Operand[2];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			end
+		SHRC:
+			begin
+			OpIn[0] = Operand[2];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			end
+		SHL:
+			begin
+			OpIn[0] = Operand[2];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			end
+		SHLC:
+			begin
+			OpIn[0] = Operand[2];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			end
+		RTR:
+			begin
+			OpIn[0] = Operand[2];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			end
+		RTRC:
+			begin
+			OpIn[0] = Operand[2];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			end
+		RTL:
+			begin
+			OpIn[0] = Operand[2];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			end
+		RTLC:
+			begin
+			OpIn[0] = Operand[2];
+			Use[0][5] = 1;
+			Use[0][4:0] = RegLoc2[0];
+			end
+		endcase
+	//Forward Values
+	Option		[1]	=	Optio			[0];
+	Condition	[1]	=	Condition	[0];
+	RegLoc0		[1]	= 	RegLoc0		[0];
+	RegLoc1		[1]	= 	RegLoc1		[0];
+	RegLoc2		[1]	= 	RegLoc2		[0];
+	Stall			[2]	=	0					;
+	end
+		
+	
+	//Machine State 0 - Fetch Instruction
+	if(Stall[0] == 0)
+		begin
+		Operation	=	Input[31:24];
+		Option[0]	=	Input[23]	;
+		Condition[0]=	Input[22:15];
+		RegLoc0[0]	=	Input[14:10];
+		RegLoc1[0]	=	Input[09:05];
+		RegLoc2[0]	=	Input[04:00];
+		PC				=	PC + 1		;
+		Address		=	PC				;
+		Stall[1]		=	0				;
+		end
+
+	end
 	
 	

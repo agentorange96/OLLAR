@@ -33,15 +33,6 @@ module OLLAR (CLOCK_PIN, RESET_PIN, INPUT_PIN, OUTPUT_PIN, ADDRESS_PIN, WRITE_PI
 	reg			[31:00]	R		[31:00]			;	//General Purpose Registers
 	reg			[31:00]	PC							;	//Program Counter
 	reg			[31:00]	IR		[03:00]			;	//Instruction Register
-
-	//Define Operations
-	parameter	[08:00]	NOP	=8'b00000000	;	//Do nothing
-	parameter	[08:00]	JMP	=8'b00000001	;	//Jump to address
-	parameter	[08:00]	LD		=8'b00000010	;	//Load value into register
-	parameter	[08:00]	ST		=8'b00000011	;	//Store value from register
-	parameter	[08:00]	SET	=8'b00000100	;	//Set register to value in next word
-	parameter	[08:00]	CLR	=8'b00000101	;	//Clear register
-	parameter	[08:00]	ADD	=8'b01000000	;	//Addition
 	
 	//Instantiate Pipeline
 	OLLAR_Pipeline	Pipeline	();

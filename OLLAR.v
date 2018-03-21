@@ -19,7 +19,7 @@
 
 //This is the top-level entity for the OLLAR processor
 //Memory, peripherals and cores may be defined here
-module OLLAR ();
+module OLLAR (CLOCK_PIN, RESET_PIN);
 	//Define Inputs
 	input						CLOCK_PIN				;	//System Clock
 	input						RESET_PIN				;	//Reset System
@@ -28,13 +28,16 @@ module OLLAR ();
 	
 	//Define Registers
 	reg		[31:00]		Input		[3:0]			;	//Memory & Peripheral Inputs
-	reg		[31:00]		Output	[3:0]			;	//Memory & Peripheral Outputs
-	reg		[31:00]		Write		[3:0]			;	//Memory & Peripheral Write Enable
+	
+	//Assign Wires
+	wire		[31:00]		Output	[3:0]			;	//Memory & Peripheral Outputs
+	wire		[31:00]		Address	[3:0]			;	//Memory & Peripheral Address
+	wire		[31:00]		Write		[3:0]			;	//Memory & Peripheral Write Enable
 	
 	//Instantiate Cores
-	OLLAR_Core	C0	(Clock_PIN, Reset_PIN, Input[0], Output[0], Address[0], Write[0]);
-	OLLAR_Core	C1	(Clock_PIN, Reset_PIN, Input[1], Output[1], Address[1], Write[1]);
-	OLLAR_Core	C2	(Clock_PIN, Reset_PIN, Input[2], Output[2], Address[2], Write[2]);
-	OLLAR_Core	C3	(Clock_PIN, Reset_PIN, Input[3], Output[3], Address[3], Write[3]);
+	OLLAR_Core	C0	(CLOCK_PIN, RESET_PIN, Input[0], Output[0], Address[0], Write[0]);
+	OLLAR_Core	C1	(CLOCK_PIN, RESET_PIN, Input[1], Output[1], Address[1], Write[1]);
+	OLLAR_Core	C2	(CLOCK_PIN, RESET_PIN, Input[2], Output[2], Address[2], Write[2]);
+	OLLAR_Core	C3	(CLOCK_PIN, RESET_PIN, Input[3], Output[3], Address[3], Write[3]);
 										
 endmodule
